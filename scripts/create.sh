@@ -3,7 +3,7 @@
 echo "Создание структуры проекта"
 
 # Создаем основную структуру каталогов
-mkdir -p ./{internal/{config,delivery/http,repository/kafka,domain},scripts,api,docs,deploy}
+mkdir -p ./{internal/{config,delivery/http,repository/kafka,domain}}
 
 # Создаем основные файлы
 touch ./internal/config/config.go
