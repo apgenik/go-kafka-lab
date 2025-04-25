@@ -15,13 +15,13 @@ type Event struct {
 }
 
 func main() {
-	brockers := "localhost:9092"
+	brokers := "localhost:9092"
 	topic := "AR.APGENIK.V1"
 
 	// Подключение к Kafka
 	// ---------- Producer ----------
 	writer := kafka.NewWriter(kafka.WriterConfig{
-		Brokers:  []string{brockers},
+		Brokers:  []string{brokers},
 		Topic:    topic,
 		Balancer: &kafka.LeastBytes{},
 	})
@@ -48,4 +48,30 @@ func main() {
 	}
 
 	fmt.Println("✅ Сообщение отправлено в Kafka")
+
+	fmt.Println("✅ Читаем сообщение из Kafka")
+	// ---------- Reader ----------
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers:   []string{brokers},
+		Topic:     topic,
+		Partition: 0,
+		MinBytes:  1,    // минимальный размер пакета
+		MaxBytes:  10e6, // максимальный размер пакета
+	})
+	defer reader.Close()
+
+	// Пропускаем до конца, если есть старые сообщения
+	reader.SetOffset(kafka.LastOffset - 1)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	message, err := reader.ReadMessage(ctx)
+	if err != nil {
+		log.Fatalf("Ошибка чтения из Kafka: %v", err)
+	}
+
+	fmt.Printf("📨 Получено сообщение: %s\n", string(message.Value))
+	fmt.Printf("📌 Offset: %d | Partition: %d | Topic: %s\n",
+		message.Offset, message.Partition, message.Topic)
 }
