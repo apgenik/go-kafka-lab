@@ -47,3 +47,39 @@ func getLastOffset() (int64, error) {
 
 	return m.Offset, nil
 }
+
+//
+//
+
+type Consumer struct {
+	reader *kafka.Reader
+}
+
+func NewConsumer(brokers []string, topic string) *Consumer {
+	return &Consumer{
+		reader: kafka.NewReader(kafka.ReaderConfig{
+			Brokers:   brokers,
+			Topic:     topic,
+			Partition: 0,                      // Читаем только из партиции 0
+			MinBytes:  1,                      // Минимальный размер для немедленного ответа
+			MaxBytes:  10e6,                   // 10MB
+			MaxWait:   100 * time.Millisecond, // Максимальное время ожидания
+		}),
+	}
+}
+
+func (c *Consumer) ReadMessage() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	msg, err := c.reader.ReadMessage(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return string(msg.Value), nil
+}
+
+func (c *Consumer) Close() error {
+	return c.reader.Close()
+}

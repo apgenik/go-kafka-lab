@@ -33,3 +33,36 @@ func PublishMessage(message string) (int64, error) {
 
 	return getLastOffset()
 }
+
+type Producer struct {
+	writer *kafka.Writer
+}
+
+func NewProducer(brokers []string, topic string) *Producer {
+	return &Producer{
+		writer: &kafka.Writer{
+			Addr:     kafka.TCP(brokers...),
+			Topic:    topic,
+			Balancer: &kafka.LeastBytes{},
+			Async:    true, // Асинхронная запись для производительности
+		},
+	}
+}
+
+func (p *Producer) Publish(message string) (int64, error) {
+	err := p.writer.WriteMessages(context.Background(),
+		kafka.Message{
+			Value: []byte(message),
+		},
+	)
+	if err != nil {
+		return 0, err
+	}
+	// В этой реализации offset не возвращается напрямую
+	// Можно изменить логику, если нужно точное значение
+	return 0, nil
+}
+
+func (p *Producer) Close() error {
+	return p.writer.Close()
+}
